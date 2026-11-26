@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RailPulse Pro — Executive Train Ticketing & Operations System</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- ==================== NAVIGATION ==================== -->
+    <header class="navbar no-print">
+      <div class="navbar-inner">
+        <div class="brand" onclick="App.switchView('book')">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="3" width="16" height="15" rx="3"/>
+              <path d="M4 11h16"/>
+              <path d="M12 3v8"/>
+              <circle cx="8.5" cy="14.5" r="1"/>
+              <circle cx="15.5" cy="14.5" r="1"/>
+              <path d="M8 18l-2 3"/>
+              <path d="M16 18l2 3"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <h1>RailPulse <span style="color:var(--gold-bright);letter-spacing:0">Pro</span></h1>
+            <span data-i18n="brandSub">Sistem Tiket & Telemetri Berkelajuan Tinggi</span>
+          </div>
+        </div>
+
+        <nav class="nav-links">
+          <button class="nav-btn active" data-view="book" onclick="App.switchView('book')" data-i18n="navBook">
+            Tempah Tiket
+          </button>
+          <button class="nav-btn" data-view="board" onclick="App.switchView('board')" data-i18n="navBoard">
+            Papan Jadual & PNR
+          </button>
+          <button class="nav-btn" data-view="my-bookings" onclick="App.switchView('my-bookings')" data-i18n="navMyTickets">
+            Tiket Saya
+          </button>
+          <button class="nav-btn admin-pill" id="nav-admin-btn" data-view="admin" onclick="App.switchView('admin')" style="display:none;" data-i18n="navAdmin">
+            Admin & Laporan
+          </button>
+        </nav>
+
+        <div class="nav-right">
+          <div class="util-toggle" title="Tukar Bahasa / Switch Language">
+            <button type="button" class="util-pill active" id="lang-bm-btn" onclick="App.setLanguage('bm')">BM</button>
+            <button type="button" class="util-pill" id="lang-en-btn" onclick="App.setLanguage('en')">EN</button>
+          </div>
+          <button type="button" class="icon-toggle-btn" id="theme-toggle-btn" title="Light / Dark Mode" onclick="App.toggleTheme()">☀</button>
+          <div id="nav-auth-area" style="display:flex;align-items:center;gap:10px;"></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <!-- ==================== VIEW 1: BOOK TICKETS ==================== -->
+      <section id="view-book" class="view-section active">
+        <div class="hero-banner">
+          <div class="hero-top">
+            <div>
+              <div class="hero-badge">
+                <span class="pulse-dot"></span>
+                <span data-i18n="heroBadge">Rangkaian Aktif · Inventori Tempat Duduk Masa Nyata</span>
+              </div>
+              <h2 class="hero-title">
+                <span data-i18n="heroTitle1">Sistem Tiket Kereta Api Generasi Baru,</span><br />
+                <span class="gradient-text" data-i18n="heroTitle2">Pantas, Moden & Profesional.</span>
+              </h2>
+              <p class="hero-sub" data-i18n="heroSub">
+                Tempah tren ETS Platinum, ETS Gold & Ekspres di seluruh Malaysia dengan pilihan tempat duduk gerabak interaktif, pas masuk QR segera, dan resit rasmi.
+              </p>
+            </div>
+            <div class="hero-stats">
+              <div class="hero-stat-pill">
+                <div class="hero-stat-val">10</div>
+                <div class="hero-stat-lbl" data-i18n="statHubs">Stesen Utama</div>
+              </div>
+              <div class="hero-stat-pill">
+                <div class="hero-stat-val" style="color:var(--cyan-bright)">99.4%</div>
+                <div class="hero-stat-lbl" data-i18n="statOnTime">Ketepatan Masa</div>
+              </div>
+              <div class="hero-stat-pill">
+                <div class="hero-stat-val" style="color:var(--gold-bright)">3 Tiers</div>
+                <div class="hero-stat-lbl" data-i18n="statClasses">Kelas Kabin</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="trip-type-bar">
+            <button type="button" class="trip-pill active" id="pill-oneway" onclick="App.setTripMode('oneway')" data-i18n="tripOneWay">Sehala (One-Way)</button>
+            <button type="button" class="trip-pill" id="pill-roundtrip" onclick="App.setTripMode('roundtrip')" data-i18n="tripRoundTrip">Pergi-Balik (Diskaun 5%)</button>
+          </div>
+
+          <form class="search-box" id="search-form" onsubmit="App.handleSearch(event)">
+            <div class="form-group">
+              <label class="form-label" data-i18n="originStation">Stesen Berlepas</label>
+              <select id="search-origin" class="form-control"></select>
+            </div>
+            <button type="button" class="swap-btn" title="Swap Stations" onclick="App.swapStations()">⇄</button>
+            <div class="form-group">
+              <label class="form-label" data-i18n="destStation">Stesen Destinasi</label>
+              <select id="search-dest" class="form-control"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" data-i18n="departDate">Tarikh Pergi</label>
+              <input type="date" id="search-date" class="form-control" required />
+            </div>
+            <div class="form-group" id="return-date-group" style="display:none;">
+              <label class="form-label" data-i18n="returnDate">Tarikh Balik</label>
+              <input type="date" id="search-return-date" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" data-i18n="trainService">Perkhidmatan Tren</label>
+              <select id="search-type" class="form-control">
+                <option value="ALL" data-i18n="allServices">Semua Perkhidmatan</option>
+                <option value="ETS Platinum">ETS Platinum</option>
+                <option value="ETS Gold">ETS Gold</option>
+                <option value="Intercity Express">Intercity Express</option>
+                <option value="Executive Shuttle">Executive Shuttle</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg" data-i18n="searchTrains">Cari Tren</button>
+          </form>
+
+          <div class="quick-routes">
+            <span class="quick-routes-label" data-i18n="popularRoutes">Laluan Popular:</span>
+            <button type="button" class="route-chip" onclick="App.quickRoute(1,2)">KL Sentral → Butterworth</button>
+            <button type="button" class="route-chip" onclick="App.quickRoute(1,3)">KL Sentral → Ipoh</button>
+            <button type="button" class="route-chip" onclick="App.quickRoute(1,4)">KL Sentral → JB Sentral</button>
+            <button type="button" class="route-chip" onclick="App.quickRoute(1,6)">KL Sentral → Padang Besar</button>
+            <button type="button" class="route-chip" onclick="App.quickRoute(1,9)">KL Sentral → Melaka (Tampin)</button>
+            <button type="button" class="route-chip" onclick="App.quickRoute('','')" data-i18n="showAllDepartures">Papar Semua Pelepasan</button>
+          </div>
+        </div>
+
+        <div id="rt-status-banner" class="rt-banner" style="display:none;"></div>
+
+        <div class="results-header">
+          <div>
+            <h3 class="results-title" id="results-heading">Available Train Departures</h3>
+            <p style="font-size:0.84rem;color:var(--text-secondary)" id="results-sub">Select a train to inspect live coach seat availability and fares.</p>
+          </div>
+          <div style="font-size:0.8rem;color:var(--gold-bright);background:var(--gold-dim);border:1px solid rgba(245,158,11,0.3);padding:8px 14px;border-radius:12px;">
+            Promo Codes: <strong class="mono">RAIL10</strong> (10% off) · <strong class="mono">ETSPRO15</strong> (15% off) · <strong class="mono">MERDEKA20</strong> (20% off)
+          </div>
+        </div>
+
+        <div id="schedule-results" class="schedule-list">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 2: LIVE BOARD & PNR ==================== -->
+      <section id="view-board" class="view-section">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h3 class="panel-title">Instant E-Ticket & PNR Lookup</h3>
+              <p style="font-size:0.84rem;color:var(--text-secondary)">Verify any ticket status or reprint a Digital Boarding Pass using your 6-character PNR code (e.g. <span class="mono" style="color:var(--cyan-bright)">RP-884102</span>).</p>
+            </div>
+          </div>
+          <form style="display:flex;gap:12px;max-width:560px;" onsubmit="App.lookupPNR(event)">
+            <input type="text" id="pnr-lookup-input" class="form-control mono" placeholder="Enter PNR Code (e.g. RP-884102)" style="text-transform:uppercase;" required />
+            <button type="submit" class="btn btn-primary">Track Ticket</button>
+          </form>
+        </div>
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h3 class="panel-title">Live Station Departure Board</h3>
+              <p style="font-size:0.84rem;color:var(--text-secondary)">Real-time operational status across all active corridors.</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="App.loadLiveBoard()">Refresh Board</button>
+          </div>
+          <div class="board-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Departure</th>
+                  <th>Train</th>
+                  <th>Corridor</th>
+                  <th>Arrival</th>
+                  <th>Platform</th>
+                  <th>Seats Left</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="live-board-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 3: MY BOOKINGS ==================== -->
+      <section id="view-my-bookings" class="view-section">
+        <div class="panel-card">
+          <div class="panel-header">
+            <div>
+              <h3 class="panel-title">My Tickets & Travel History</h3>
+              <p style="font-size:0.84rem;color:var(--text-secondary)">Access your digital QR boarding passes, inspect fare receipts, or request an instant 80% refund cancellation.</p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="App.switchView('book')">+ Book New Ticket</button>
+          </div>
+          <div id="my-bookings-container"></div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 4: ADMIN COMMAND CENTER ==================== -->
+      <section id="view-admin" class="view-section">
+        <div class="admin-shell">
+          <aside class="admin-sidebar no-print">
+            <div style="padding:8px 12px 14px;border-bottom:1px solid var(--border-subtle);margin-bottom:10px;">
+              <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--gold-bright);font-weight:800;">Command Center</div>
+              <div style="font-size:1rem;font-weight:800;margin-top:2px;">Railway Operations</div>
+            </div>
+            <button class="admin-nav-btn active" data-admin-tab="overview" onclick="App.switchAdminTab('overview')">Executive Overview</button>
+            <button class="admin-nav-btn" data-admin-tab="reports" onclick="App.switchAdminTab('reports')">Report Generator Studio</button>
+            <button class="admin-nav-btn" data-admin-tab="bookings" onclick="App.switchAdminTab('bookings')">Bookings & Gate Check-In</button>
+            <button class="admin-nav-btn" data-admin-tab="schedules" onclick="App.switchAdminTab('schedules')">Schedules & Live Status</button>
+            <button class="admin-nav-btn" data-admin-tab="fleet" onclick="App.switchAdminTab('fleet')">Trains & Stations</button>
+          </aside>
+
+          <div class="admin-content">
+            <!-- Admin Tab 1: Overview -->
+            <div id="admin-tab-overview" class="admin-pane">
+              <div class="kpi-grid" id="admin-kpi-grid"></div>
+
+              <div class="charts-grid">
+                <div class="panel-card" style="margin-bottom:0">
+                  <div class="panel-header">
+                    <h3 class="panel-title">Daily Ticket Revenue Trend (RM)</h3>
+                    <span class="badge badge-info">Last 14 Active Days</span>
+                  </div>
+                  <canvas id="chart-revenue"></canvas>
+                </div>
+                <div class="panel-card" style="margin-bottom:0">
+                  <div class="panel-header">
+                    <h3 class="panel-title">Revenue by Cabin Class</h3>
+                    <span class="badge badge-warn">Live Share</span>
+                  </div>
+                  <canvas id="chart-class"></canvas>
+                </div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:20px;margin-top:20px;">
+                <div class="panel-card" style="margin-bottom:0">
+                  <div class="panel-header">
+                    <h3 class="panel-title">Top Performing Corridors</h3>
+                  </div>
+                  <div class="board-table-wrap">
+                    <table class="data-table">
+                      <thead>
+                        <tr><th>Route</th><th>Pax</th><th>Revenue</th></tr>
+                      </thead>
+                      <tbody id="admin-top-routes"></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="panel-card" style="margin-bottom:0">
+                  <div class="panel-header">
+                    <h3 class="panel-title">Recent Ticket Transactions</h3>
+                  </div>
+                  <div class="board-table-wrap">
+                    <table class="data-table">
+                      <thead>
+                        <tr><th>PNR</th><th>Passenger</th><th>Route</th><th>Total</th><th>Status</th></tr>
+                      </thead>
+                      <tbody id="admin-recent-bookings"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Admin Tab 2: Report Generator Studio -->
+            <div id="admin-tab-reports" class="admin-pane" style="display:none;">
+              <div class="print-only-header">
+                <h2 style="margin:0;">RAILPULSE PRO — OFFICIAL OPERATIONS REPORT</h2>
+                <p id="print-report-meta" style="margin:4px 0 0;font-size:12px;color:#475569;"></p>
+              </div>
+
+              <div class="panel-card">
+                <div class="panel-header no-print">
+                  <div>
+                    <h3 class="panel-title">Professional Report Generator Studio</h3>
+                    <p style="font-size:0.84rem;color:var(--text-secondary)">Generate auditable financial sales reports, train passenger manifests, and corridor performance analytics. Export directly to CSV (Excel) or Print/PDF.</p>
+                  </div>
+                  <div style="display:flex;gap:10px;">
+                    <button class="btn btn-emerald btn-sm" onclick="App.exportReportCSV()">Export CSV (Excel)</button>
+                    <button class="btn btn-gold btn-sm" onclick="window.print()">Print / Save PDF</button>
+                  </div>
+                </div>
+
+                <div class="report-toolbar no-print">
+                  <div class="form-group">
+                    <label class="form-label">Report Type</label>
+                    <select id="rep-type" class="form-control" onchange="App.toggleReportFilters()">
+                      <option value="sales">Sales & Revenue Report</option>
+                      <option value="manifest">Passenger Boarding Manifest</option>
+                      <option value="routes">Route Performance & Occupancy</option>
+                    </select>
+                  </div>
+                  <div class="form-group rep-range-field">
+                    <label class="form-label">Date From</label>
+                    <input type="date" id="rep-from" class="form-control" />
+                  </div>
+                  <div class="form-group rep-range-field">
+                    <label class="form-label">Date To</label>
+                    <input type="date" id="rep-to" class="form-control" />
+                  </div>
+                  <div class="form-group rep-sales-field">
+                    <label class="form-label">Cabin Class</label>
+                    <select id="rep-class" class="form-control">
+                      <option value="ALL">All Classes</option>
+                      <option value="First Class">First Class</option>
+                      <option value="Business">Business</option>
+                      <option value="Economy">Economy</option>
+                    </select>
+                  </div>
+                  <div class="form-group rep-manifest-field" style="display:none;">
+                    <label class="form-label">Travel Date</label>
+                    <input type="date" id="rep-manifest-date" class="form-control" />
+                  </div>
+                  <div class="form-group rep-manifest-field" style="display:none;">
+                    <label class="form-label">Departure Schedule</label>
+                    <select id="rep-manifest-sched" class="form-control">
+                      <option value="ALL">All Departures on Date</option>
+                    </select>
+                  </div>
+                  <button class="btn btn-primary" onclick="App.generateReport()">Generate Report</button>
+                </div>
+
+                <div class="kpi-grid" id="report-summary-kpis"></div>
+
+                <div class="board-table-wrap">
+                  <table class="data-table" id="report-table">
+                    <thead id="report-thead"></thead>
+                    <tbody id="report-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Admin Tab 3: Bookings & Gate Check-In -->
+            <div id="admin-tab-bookings" class="admin-pane" style="display:none;">
+              <div class="panel-card">
+                <div class="panel-header">
+                  <div>
+                    <h3 class="panel-title">All Bookings & Gate Verification</h3>
+                    <p style="font-size:0.84rem;color:var(--text-secondary)">Search passenger PNR, check in boarding passengers, or process cancellations.</p>
+                  </div>
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <input type="text" id="admin-book-search" class="form-control" placeholder="Search PNR, name, train..." style="width:220px;" oninput="App.loadAdminBookings()" />
+                    <select id="admin-book-status" class="form-control" style="width:150px;" onchange="App.loadAdminBookings()">
+                      <option value="ALL">All Statuses</option>
+                      <option value="Confirmed">Confirmed</option>
+                      <option value="Checked-In">Checked-In</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="board-table-wrap">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>PNR</th>
+                        <th>Passenger</th>
+                        <th>Trip & Date</th>
+                        <th>Seat / Class</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-bookings-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Admin Tab 4: Schedules -->
+            <div id="admin-tab-schedules" class="admin-pane" style="display:none;">
+              <div class="panel-card">
+                <div class="panel-header">
+                  <div>
+                    <h3 class="panel-title">Add New Train Schedule</h3>
+                  </div>
+                </div>
+                <form id="add-schedule-form" onsubmit="App.createSchedule(event)" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;align-items:end;">
+                  <div class="form-group">
+                    <label class="form-label">Train</label>
+                    <select id="ns-train" class="form-control" required></select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Origin</label>
+                    <select id="ns-origin" class="form-control" required></select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Destination</label>
+                    <select id="ns-dest" class="form-control" required></select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Departure</label>
+                    <input type="time" id="ns-dep" class="form-control" value="09:00" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Arrival</label>
+                    <input type="time" id="ns-arr" class="form-control" value="12:30" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Duration (mins)</label>
+                    <input type="number" id="ns-dur" class="form-control" value="210" min="15" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Economy (RM)</label>
+                    <input type="number" id="ns-eco" class="form-control" value="55" step="0.5" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Business (RM)</label>
+                    <input type="number" id="ns-biz" class="form-control" value="88" step="0.5" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">First Class (RM)</label>
+                    <input type="number" id="ns-first" class="form-control" value="135" step="0.5" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Platform</label>
+                    <input type="text" id="ns-plat" class="form-control" value="Platform 1" required />
+                  </div>
+                  <button type="submit" class="btn btn-primary">+ Create Schedule</button>
+                </form>
+              </div>
+
+              <div class="panel-card">
+                <div class="panel-header">
+                  <h3 class="panel-title">Active Schedules & Live Status Control</h3>
+                </div>
+                <div class="board-table-wrap">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Train</th>
+                        <th>Corridor</th>
+                        <th>Timing</th>
+                        <th>Fares (Eco / Biz / 1st)</th>
+                        <th>Platform</th>
+                        <th>Live Status</th>
+                        <th>Delete</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admin-schedules-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Admin Tab 5: Fleet & Stations -->
+            <div id="admin-tab-fleet" class="admin-pane" style="display:none;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div class="panel-card">
+                  <div class="panel-header">
+                    <h3 class="panel-title">Train Fleet</h3>
+                  </div>
+                  <form onsubmit="App.createTrain(event)" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+                    <input id="nt-code" class="form-control mono" placeholder="Code (e.g. EP-9901)" required />
+                    <input id="nt-name" class="form-control" placeholder="Train Name" required />
+                    <select id="nt-type" class="form-control">
+                      <option value="ETS Platinum">ETS Platinum</option>
+                      <option value="ETS Gold">ETS Gold</option>
+                      <option value="Intercity Express">Intercity Express</option>
+                      <option value="Executive Shuttle">Executive Shuttle</option>
+                    </select>
+                    <button type="submit" class="btn btn-primary">+ Add Train</button>
+                  </form>
+                  <div class="board-table-wrap">
+                    <table class="data-table">
+                      <thead><tr><th>Code</th><th>Name</th><th>Tier</th><th>Status</th></tr></thead>
+                      <tbody id="admin-trains-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="panel-card">
+                  <div class="panel-header">
+                    <h3 class="panel-title">Railway Stations</h3>
+                  </div>
+                  <form onsubmit="App.createStation(event)" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+                    <input id="nst-code" class="form-control mono" placeholder="Code (e.g. KGR)" maxlength="5" required />
+                    <input id="nst-name" class="form-control" placeholder="Station Name" required />
+                    <input id="nst-city" class="form-control" placeholder="City" required />
+                    <input id="nst-state" class="form-control" placeholder="State" required />
+                    <button type="submit" class="btn btn-primary" style="grid-column:span 2;">+ Add Station</button>
+                  </form>
+                  <div class="board-table-wrap">
+                    <table class="data-table">
+                      <thead><tr><th>Code</th><th>Station</th><th>City / State</th><th>Platforms</th></tr></thead>
+                      <tbody id="admin-stations-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ==================== MODAL 1: AUTH (LOGIN / REGISTER) ==================== -->
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal-box modal-sm">
+      <div class="modal-header">
+        <h3 id="auth-modal-title">Sign In to RailPulse Pro</h3>
+        <button class="close-btn" onclick="App.closeModal('auth-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">
+          <button class="btn btn-primary btn-sm" id="tab-login-btn" onclick="App.setAuthMode('login')">Sign In</button>
+          <button class="btn btn-ghost btn-sm" id="tab-reg-btn" onclick="App.setAuthMode('register')">Create Account</button>
+        </div>
+
+        <form id="login-form" onsubmit="App.handleLogin(event)" style="display:flex;flex-direction:column;gap:14px;">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="login-email" class="form-control" placeholder="name@railpulse.my" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="login-pass" class="form-control" placeholder="••••••••" required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg">Sign In</button>
+
+          <div style="border-top:1px solid var(--border-subtle);padding-top:14px;margin-top:4px;">
+            <div style="font-size:0.74rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;font-weight:700;">1-Click Demo Access</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <button type="button" class="btn btn-ghost btn-sm" onclick="App.demoLogin('hafiz@railpulse.my','user123')">Demo Passenger</button>
+              <button type="button" class="btn btn-gold btn-sm" onclick="App.demoLogin('admin@railpulse.my','admin123')">Demo Admin</button>
+            </div>
+          </div>
+        </form>
+
+        <form id="register-form" onsubmit="App.handleRegister(event)" style="display:none;flex-direction:column;gap:12px;">
+          <div class="form-group">
+            <label class="form-label">Full Name (as per IC/Passport)</label>
+            <input type="text" id="reg-name" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="reg-email" class="form-control" required />
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input type="text" id="reg-phone" class="form-control" placeholder="012-3456789" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">IC / Passport No.</label>
+              <input type="text" id="reg-ic" class="form-control" placeholder="010101-14-1234" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password (min 6 chars)</label>
+            <input type="password" id="reg-pass" class="form-control" minlength="6" required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg">Create Account & Continue</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: INTERACTIVE SEAT SELECTION & CHECKOUT ==================== -->
+  <div class="modal-overlay" id="booking-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h3 id="bm-title">Select Coach & Seats</h3>
+          <div id="bm-subtitle" style="font-size:0.82rem;color:var(--text-secondary);"></div>
+        </div>
+        <button class="close-btn" onclick="App.closeModal('booking-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="booking-grid">
+          <!-- Left: Coach & Seat Map -->
+          <div>
+            <div class="coach-tabs" id="bm-coach-tabs"></div>
+            <div class="coach-shell">
+              <div class="coach-front">▲ Direction of Travel · Front of Coach ▲</div>
+              <div class="seat-legend">
+                <div class="legend-item"><span class="legend-dot" style="background:rgba(30,41,59,0.9);border:1px solid rgba(148,163,184,0.4);"></span> Available</div>
+                <div class="legend-item"><span class="legend-dot" style="background:linear-gradient(135deg,#06b6d4,#2563eb);"></span> Selected</div>
+                <div class="legend-item"><span class="legend-dot" style="background:rgba(15,23,42,0.8);border:1px solid rgba(244,63,94,0.4);"></span> Occupied</div>
+              </div>
+              <div class="seat-grid" id="bm-seat-grid"></div>
+            </div>
+          </div>
+
+          <!-- Right: Checkout Panel -->
+          <div class="checkout-panel">
+            <div>
+              <div class="form-label" style="margin-bottom:6px;">Selected Seats (Max 6)</div>
+              <div id="bm-selected-seats-display" style="font-family:var(--font-mono);font-size:0.95rem;font-weight:800;color:var(--cyan-bright);">None selected</div>
+            </div>
+
+            <div id="bm-passenger-inputs" style="display:flex;flex-direction:column;gap:8px;max-height:190px;overflow-y:auto;"></div>
+
+            <div class="form-group">
+              <label class="form-label">Promo Code</label>
+              <div style="display:flex;gap:8px;">
+                <input type="text" id="bm-promo-input" class="form-control mono" placeholder="RAIL10 / ETSPRO15" style="text-transform:uppercase;" />
+                <button type="button" class="btn btn-ghost btn-sm" onclick="App.applyPromo()">Apply</button>
+              </div>
+              <div id="bm-promo-msg" style="font-size:0.76rem;color:var(--emerald);"></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Payment Method</label>
+              <div class="payment-methods" id="bm-pay-methods">
+                <div class="pay-option active" onclick="App.selectPayment(this, 'FPX Online Banking')">FPX Banking</div>
+                <div class="pay-option" onclick="App.selectPayment(this, 'Credit / Debit Card')">Visa / Master</div>
+                <div class="pay-option" onclick="App.selectPayment(this, 'Touch \'n Go eWallet')">TnG eWallet</div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid var(--border-subtle);">
+              <div class="summary-row" id="bm-outbound-row" style="display:none;"><span data-i18n="outboundFare">Tambang Pergi</span><span class="mono" id="bm-outbound-fare">RM 0.00</span></div>
+              <div class="summary-row"><span id="bm-subtotal-lbl" data-i18n="fareSubtotal">Subjumlah Tambang</span><span class="mono" id="bm-subtotal">RM 0.00</span></div>
+              <div class="summary-row" id="bm-rt-disc-row" style="display:none;color:var(--emerald);"><span data-i18n="rtBundleDisc">Diskaun Pakej Pergi-Balik (5%)</span><span class="mono" style="color:var(--emerald);" id="bm-rt-disc">-RM 0.00</span></div>
+              <div class="summary-row"><span data-i18n="platformFee">Caj Platform & Keselamatan</span><span class="mono" id="bm-fee">RM 3.00</span></div>
+              <div class="summary-row" id="bm-discount-row" style="display:none;color:var(--emerald);"><span data-i18n="promoDiscount">Diskaun Promo</span><span class="mono" style="color:var(--emerald);" id="bm-discount">-RM 0.00</span></div>
+              <div class="summary-row total"><span data-i18n="totalPayable">Jumlah Perlu Dibayar</span><span class="mono" style="color:var(--cyan-bright);" id="bm-total">RM 0.00</span></div>
+            </div>
+
+            <button class="btn btn-primary btn-lg" id="bm-confirm-btn" onclick="App.confirmBooking()">Confirm & Pay Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: DIGITAL E-TICKET / BOARDING PASS ==================== -->
+  <div class="modal-overlay" id="ticket-modal">
+    <div class="modal-box modal-md">
+      <div class="modal-header no-print">
+        <h3 data-i18n="ticketModalTitle">Pas Masuk Digital & Resit Rasmi</h3>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-gold btn-sm" onclick="window.print()" data-i18n="printPdfBtn">Cetak / Simpan PDF</button>
+          <button class="close-btn" onclick="App.closeModal('ticket-modal')">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body" id="ticket-modal-body"></div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="/js/i18n.js"></script>
+  <script src="/js/qrcode.js"></script>
+  <script src="/js/charts.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
